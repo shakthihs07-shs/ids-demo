@@ -1,0 +1,21 @@
+tactic,technique_id,technique,attack_types,test_rows,detected,recall,coverage
+Credential Access,T1110.001,Brute Force: Password Guessing,"guess_passwd, snmpguess",1562,0,0.000000,Gap
+Credential Access,T1056.002,Input Capture: GUI Input Capture,xlock,9,0,0.000000,Gap
+Defense Evasion,T1014,Rootkit,rootkit,13,0,0.000000,Gap
+Lateral Movement,T1210,Exploitation of Remote Services,worm,2,0,0.000000,Gap
+Command and Control,T1572,Protocol Tunneling,httptunnel,133,4,0.030075,Gap
+Lateral Movement,T1021,Remote Services,multihop,18,1,0.055556,Gap
+Impact,T1499.002,Endpoint DoS: Service Exhaustion Flood,processtable,685,51,0.074453,Gap
+Initial Access,T1190,Exploit Public-Facing Application,"imap, named, phf, sendmail, sqlattack",36,5,0.138889,Gap
+Initial Access,T1078.001,Valid Accounts: Default Accounts,"snmpgetattack, warezmaster",1122,255,0.227273,Gap
+Collection,T1056.001,Input Capture: Keylogging,xsnoop,4,1,0.250000,Gap
+Privilege Escalation,T1068,Exploitation for Privilege Escalation,"buffer_overflow, loadmodule, perl, ps, xterm",52,15,0.288462,Gap
+Persistence,T1105,Ingress Tool Transfer,ftp_write,3,1,0.333333,Gap
+Impact,T1499.003,Endpoint DoS: Application Exhaustion Flood,"apache2, back, mailbomb",1389,960,0.691145,Partial
+Reconnaissance,T1595.002,Active Scanning: Vulnerability Scanning,"mscan, saint, satan",2050,1547,0.754634,Partial
+Impact,T1499.004,Endpoint DoS: Application or System Exploitation,"land, pod, teardrop",60,56,0.933333,Good
+Impact,T1499.001,Endpoint DoS: OS Exhaustion Flood,neptune,4657,4655,0.999571,Good
+Impact,T1498.002,Network DoS: Reflection Amplification,smurf,665,665,1.000000,Good
+Discovery,T1018,Remote System Discovery,ipsweep,141,141,1.000000,Good
+Discovery,T1046,Network Service Discovery,"nmap, portsweep",230,230,1.000000,Good
+Impact,T1498.001,Network DoS: Direct Network Flood,udpstorm,2,2,1.000000,Good

@@ -1,0 +1,39 @@
+feature,psi,status
+dst_host_diff_srv_rate,0.116765,moderate shift
+src_bytes,0.114825,moderate shift
+dst_host_srv_count,0.111312,moderate shift
+dst_host_same_srv_rate,0.104680,moderate shift
+srv_count,0.103442,moderate shift
+duration,0.081987,stable
+dst_bytes,0.073040,stable
+count,0.048994,stable
+srv_diff_host_rate,0.022370,stable
+dst_host_srv_diff_host_rate,0.014413,stable
+dst_host_rerror_rate,0.012767,stable
+dst_host_count,0.012690,stable
+dst_host_same_src_port_rate,0.009391,stable
+land,0.000000,stable
+urgent,0.000000,stable
+wrong_fragment,0.000000,stable
+hot,0.000000,stable
+num_failed_logins,0.000000,stable
+root_shell,0.000000,stable
+su_attempted,0.000000,stable
+logged_in,0.000000,stable
+num_compromised,0.000000,stable
+serror_rate,0.000000,stable
+is_guest_login,0.000000,stable
+num_outbound_cmds,0.000000,stable
+is_host_login,0.000000,stable
+num_access_files,0.000000,stable
+num_shells,0.000000,stable
+num_root,0.000000,stable
+num_file_creations,0.000000,stable
+diff_srv_rate,0.000000,stable
+rerror_rate,0.000000,stable
+srv_rerror_rate,0.000000,stable
+same_srv_rate,0.000000,stable
+srv_serror_rate,0.000000,stable
+dst_host_serror_rate,0.000000,stable
+dst_host_srv_serror_rate,0.000000,stable
+dst_host_srv_rerror_rate,0.000000,stable

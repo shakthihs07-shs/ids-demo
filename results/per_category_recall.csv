@@ -1,0 +1,51 @@
+model,category,attack_types,rows,recall
+Random Forest,DoS,seen,5741,0.997039
+Random Forest,DoS,unseen,1717,0.233547
+Random Forest,Probe,seen,1106,1.000000
+Random Forest,Probe,unseen,1315,0.515589
+Random Forest,R2L,seen,2199,0.070941
+Random Forest,R2L,unseen,555,0.005405
+Random Forest,U2R,seen,37,0.081081
+Random Forest,U2R,unseen,163,0.061350
+Random Forest,ALL,seen,9083,0.769459
+Random Forest,ALL,unseen,3750,0.291200
+Gradient Boosting,DoS,seen,5741,0.998955
+Gradient Boosting,DoS,unseen,1717,0.444962
+Gradient Boosting,Probe,seen,1106,1.000000
+Gradient Boosting,Probe,unseen,1315,0.568061
+Gradient Boosting,R2L,seen,2199,0.136880
+Gradient Boosting,R2L,unseen,555,0.005405
+Gradient Boosting,U2R,seen,37,0.162162
+Gradient Boosting,U2R,unseen,163,0.055215
+Gradient Boosting,ALL,seen,9083,0.786965
+Gradient Boosting,ALL,unseen,3750,0.406133
+SVM (RBF),DoS,seen,5741,0.997213
+SVM (RBF),DoS,unseen,1717,0.070472
+SVM (RBF),Probe,seen,1106,0.993671
+SVM (RBF),Probe,unseen,1315,0.717110
+SVM (RBF),R2L,seen,2199,0.080491
+SVM (RBF),R2L,unseen,555,0.010811
+SVM (RBF),U2R,seen,37,0.216216
+SVM (RBF),U2R,unseen,163,0.116564
+SVM (RBF),ALL,seen,9083,0.771661
+SVM (RBF),ALL,unseen,3750,0.290400
+Neural Net (MLP),DoS,seen,5741,0.998432
+Neural Net (MLP),DoS,unseen,1717,0.385556
+Neural Net (MLP),Probe,seen,1106,0.999096
+Neural Net (MLP),Probe,unseen,1315,0.641825
+Neural Net (MLP),R2L,seen,2199,0.135971
+Neural Net (MLP),R2L,unseen,555,0.009009
+Neural Net (MLP),U2R,seen,37,0.486486
+Neural Net (MLP),U2R,unseen,163,0.147239
+Neural Net (MLP),ALL,seen,9083,0.787625
+Neural Net (MLP),ALL,unseen,3750,0.409333
+Ensemble (RF+GB+MLP),DoS,seen,5741,0.998955
+Ensemble (RF+GB+MLP),DoS,unseen,1717,0.380897
+Ensemble (RF+GB+MLP),Probe,seen,1106,1.000000
+Ensemble (RF+GB+MLP),Probe,unseen,1315,0.617490
+Ensemble (RF+GB+MLP),R2L,seen,2199,0.117326
+Ensemble (RF+GB+MLP),R2L,unseen,555,0.005405
+Ensemble (RF+GB+MLP),U2R,seen,37,0.216216
+Ensemble (RF+GB+MLP),U2R,unseen,163,0.079755
+Ensemble (RF+GB+MLP),ALL,seen,9083,0.782451
+Ensemble (RF+GB+MLP),ALL,unseen,3750,0.395200

@@ -1,0 +1,5 @@
+perturbation,attacks_previously_detected,now_evade,evasion_rate
+"bytes x1.5 +200, duration +1.5s",8589,1463,0.170334
+"bytes x2 +200, duration +2s",8589,1451,0.168937
+"bytes x5 +200, duration +5s",8589,1396,0.162533
+"bytes x10 +200, duration +10s",8589,1390,0.161835

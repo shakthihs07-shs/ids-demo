@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IDS Risk Dashboard</title>
+<meta name="description" content="ML intrusion detection on NSL-KDD: model results, novel-attack gap, MITRE ATT&CK coverage, guardrails and the ISO/IEC 27001 risk register.">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --s1: #2a78d6; --s2: #eb6834;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --s1: #3987e5; --s2: #d95926;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1080px; margin: 0 auto; padding: 32px 16px 64px; }
+header h1 { font-size: 26px; line-height: 1.2; margin: 0 0 6px; }
+header p { margin: 0; color: var(--ink-2); max-width: 70ch; }
+header nav { margin-top: 10px; display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+a { color: var(--s1); }
+h2 { font-size: 17px; margin: 0 0 2px; }
+h3 { font-size: 15px; margin: 18px 0 8px; }
+.sub { color: var(--ink-2); font-size: 14px; margin: 0 0 14px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; margin: 24px 0; }
+.tile, .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.tile { padding: 14px 16px; }
+.tile .label { color: var(--ink-2); font-size: 13px; }
+.tile .value { font-size: 26px; white-space: nowrap; font-weight: 600; line-height: 1.25; margin: 2px 0; }
+.tile .note { color: var(--muted); font-size: 12.5px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 12px; }
+.card { padding: 18px 20px; margin-bottom: 12px; min-width: 0; }
+svg { display: block; width: 100%; min-width: 560px; height: auto; overflow: visible; }
+svg text { fill: var(--ink-2); font-size: 12px; }
+svg .val { fill: var(--ink); font-variant-numeric: tabular-nums; }
+svg .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); margin: 0 0 8px; }
+.key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--ink-2); font-weight: 600; font-size: 12.5px; }
+.nowrap { white-space: nowrap; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.scroll { overflow-x: auto; }
+details { margin-top: 10px; font-size: 13px; color: var(--ink-2); }
+summary { cursor: pointer; }
+.chip { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 10px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.12); opacity: 0; transition: opacity .1s; z-index: 10; max-width: 280px; }
+.err { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+footer { color: var(--muted); font-size: 13px; margin-top: 24px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>AI intrusion detection: results and risk</h1>
+    <p>Four ML models trained on NSL-KDD, tested on a set with 17 attack types never seen in training, repeated on CIC-IDS2017, mapped to MITRE ATT&amp;CK, and assessed against ISO/IEC 27001:2022 Annex A. Every number on this page is read from the repository's <code>results/</code> files.</p>
+    <nav>
+      <a href="live/"><b>Live IDS console</b></a>
+      <a href="risk_register.xlsx">Risk register (.xlsx)</a>
+    </nav>
+  </header>
+  <div id="app"><p class="sub">Loading results…</p></div>
+  <footer>NSL-KDD is 1998 traffic; the repeat on CIC-IDS2017 gives different numbers but the same patterns. MITRE, drift, evasion and the risk register use NSL-KDD only. The organisation in the risk assessment is hypothetical.</footer>
+</main>
+<div class="tip" id="tip" role="tooltip"></div>
+<script>
+const pct = (x, d = 1) => (100 * x).toFixed(d) + "%";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+
+function parseCSV(text) {
+  const rows = []; let row = [], f = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ",") { row.push(f); f = ""; }
+    else if (c === "\n") { row.push(f); rows.push(row); row = []; f = ""; }
+    else if (c !== "\r") f += c;
+  }
+  if (f || row.length) { row.push(f); rows.push(row); }
+  const head = rows.shift();
+  return rows.filter(r => r.length === head.length).map(r => Object.fromEntries(head.map((h, j) => [h, r[j]])));
+}
+
+// Horizontal bars: one or two series per category. 4px rounded data-end, square at the baseline.
+function hbar(cats, series, { max = 1, fmt = pct, color, refs = [], ticks = [0, 0.25, 0.5, 0.75, 1].map(f => f * max), L = 170 } = {}) {
+  const W = 640, R = 56, bh = series.length > 1 ? 12 : 16, gap = 2, pad = 12;
+  const rowH = series.length * bh + (series.length - 1) * gap + pad, H = cats.length * rowH + 22;
+  const x = v => L + (W - L - R) * Math.min(v, max) / max;
+  const bar = (x0, y, w, h) => w < 0.5 ? "" : w <= 4 ? `<rect x="${x0}" y="${y}" width="${w}" height="${h}"/>`
+    : `<path d="M${x0},${y}h${w - 4}a4,4 0 0 1 4,4v${h - 8}a4,4 0 0 1 -4,4h${-(w - 4)}z"/>`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  for (const t of ticks)
+    s += `<line x1="${x(t)}" x2="${x(t)}" y1="0" y2="${H - 22}" stroke="var(--grid)"/><text class="tick" x="${x(t)}" y="${H - 6}" text-anchor="middle">${fmt(t)}</text>`;
+  for (const r of refs)
+    s += `<line x1="${x(r.v)}" x2="${x(r.v)}" y1="0" y2="${H - 22}" stroke="var(--axis)" stroke-width="1.5"/><text class="tick" x="${x(r.v) + 4}" y="10">${esc(r.label)}</text>`;
+  s += `<line x1="${L}" x2="${L}" y1="0" y2="${H - 22}" stroke="var(--axis)"/>`;
+  cats.forEach((c, i) => {
+    const y0 = i * rowH + pad / 2;
+    s += `<text x="${L - 10}" y="${y0 + (rowH - pad) / 2 + 4}" text-anchor="end">${esc(c.label)}</text>`;
+    series.forEach((se, k) => {
+      const v = c[se.key], y = y0 + k * (bh + gap), fill = color ? color(c) : se.color;
+      s += `<g fill="${fill}">${bar(L, y, x(v) - L, bh)}</g>`;
+      s += `<text class="val" x="${x(v) + 6}" y="${y + bh / 2 + 4}">${fmt(v)}</text>`;
+      s += `<rect x="0" y="${y - 1}" width="${W}" height="${bh + 2}" fill="transparent" data-tip="${esc(`<b>${c.label}</b><br>${se.name ? se.name + ": " : ""}${fmt(v)}${c.tip ? "<br>" + c.tip : ""}`)}"/>`;
+    });
+  });
+  return `<div class="scroll">${s}</svg></div>`;
+}
+
+function table(cols, rows) {
+  return `<div class="scroll"><table><thead><tr>${cols.map(c => `<th class="${c.num ? "num" : ""}">${c.h}</th>`).join("")}</tr></thead><tbody>${
+    rows.map(r => `<tr>${cols.map(c => `<td class="${c.num ? "num" : ""}">${c.f(r)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+}
+const details = (cols, rows) => `<details><summary>Show as table</summary>${table(cols, rows)}</details>`;
+
+const STATUS = { Critical: "critical", High: "serious", Medium: "warning", Low: "good", Gap: "critical", Partial: "warning", Good: "good" };
+const chip = s => `<span class="chip"><i style="background:var(--${STATUS[s]})"></i>${s}</span>`;
+
+async function main() {
+  const files = ["metrics_binary", "cv_binary", "per_category_recall", "guardrails_hybrid", "guardrails_threshold",
+                 "guardrails_evasion", "guardrails_drift_psi", "mitre_by_technique",
+                 "cicids2017/metrics_binary", "cicids2017/per_attack_recall", "cicids2017/hybrid"];
+  const [csv, risks] = await Promise.all([
+    Promise.all(files.map(f => fetch(`results/${f}.csv`).then(r => { if (!r.ok) throw r.status; return r.text(); }).then(parseCSV))),
+    fetch("risk_register.csv").then(r => r.text()).then(parseCSV),
+  ]);
+  const [metrics, cv, recall, hybrid, thr, evasion, drift, mitre, cMetrics, cRecall, cHybrid] = csv;
+  const num = (rows, ...keys) => rows.forEach(r => keys.forEach(k => r[k] = +r[k]));
+  num(metrics, "accuracy", "precision", "recall", "f1", "false_positive_rate", "roc_auc");
+  num(cv, "f1"); num(recall, "recall", "rows"); num(thr, "threshold", "recall", "precision", "false_positive_rate");
+  num(hybrid, "recall_all", "recall_seen_attacks", "recall_unseen_attacks", "false_positive_rate", "f1"); num(evasion, "evasion_rate");
+  num(cMetrics, "precision", "recall", "f1", "false_positive_rate", "roc_auc"); num(cRecall, "recall", "rows");
+  num(cHybrid, "recall_all", "recall_seen_attacks", "recall_unseen_attacks", "false_positive_rate", "f1");
+  num(drift, "psi"); num(mitre, "recall", "test_rows"); num(risks, "Inherent score", "Residual score");
+
+  const ENS = "Ensemble (RF+GB+MLP)";
+  const best = metrics.filter(m => m.model !== ENS).sort((a, b) => b.f1 - a.f1)[0];
+  const lab = cv.find(c => c.model === best.model) || cv[0];
+  const ensAll = Object.fromEntries(recall.filter(r => r.model === ENS && r.category === "ALL").map(r => [r.attack_types, r.recall]));
+  const hyb = hybrid.find(h => h.detector.startsWith("Hybrid"));
+  const gaps = mitre.filter(m => m.coverage === "Gap").length;
+  const crit = k => risks.filter(r => r[k] === "Critical").length;
+  const overLimit = risks.filter(r => r["Residual score"] > 9).length;
+
+  const tile = (label, value, note) => `<div class="tile"><div class="label">${label}</div><div class="value">${value}</div><div class="note">${note}</div></div>`;
+  let h = `<div class="tiles">
+    ${tile("Best model F1", pct(best.f1), `${best.model} · precision ${pct(best.precision)} · FPR ${pct(best.false_positive_rate)}`)}
+    ${tile("Lab vs realistic F1", `${pct(lab.f1)} → ${pct(best.f1)}`, `cross-validation vs test set with unseen attacks`)}
+    ${tile("Novel attacks detected", `${pct(ensAll.unseen)} → ${pct(hyb.recall_unseen_attacks)}`, `ensemble alone → with anomaly layer`)}
+    ${tile("ATT&CK techniques with a gap", `${gaps} of ${mitre.length}`, `detected under 40% of the time`)}
+    ${tile("Attacks that evade after padding", pct(Math.max(...evasion.map(e => e.evasion_rate)), 0), `of attacks the ensemble had detected`)}
+    ${tile("Critical risks", `${crit("Inherent rating")} → ${crit("Residual rating")}`, `before → after treatment · ${overLimit} above acceptance`)}
+  </div>`;
+
+  // Models
+  const mcols = [{ h: "Model", f: r => esc(r.model) }, { h: "F1", num: 1, f: r => pct(r.f1) }, { h: "Precision", num: 1, f: r => pct(r.precision) },
+    { h: "Recall", num: 1, f: r => pct(r.recall) }, { h: "False-positive rate", num: 1, f: r => pct(r.false_positive_rate) }, { h: "ROC-AUC", num: 1, f: r => r.roc_auc.toFixed(3) }];
+  h += `<div class="card"><h2>Model comparison</h2><p class="sub">Attack vs normal on KDDTest+, threshold 0.5. High precision, but about one attack in three is missed.</p>
+    ${table(mcols, metrics)}</div>`;
+
+  // Known vs novel
+  const fam = ["DoS", "Probe", "R2L", "U2R", "ALL"].map(c => {
+    const g = t => recall.find(r => r.model === ENS && r.category === c && r.attack_types === t);
+    return { label: c === "ALL" ? "All attacks" : c, seen: g("seen").recall, unseen: g("unseen").recall,
+      tip: `${g("seen").rows.toLocaleString()} known / ${g("unseen").rows.toLocaleString()} novel rows` };
+  });
+  const famSeries = [{ key: "seen", name: "Known attack types", color: "var(--s1)" }, { key: "unseen", name: "Novel attack types", color: "var(--s2)" }];
+  h += `<div class="grid2"><div class="card"><h2>Known vs novel attacks</h2><p class="sub">Share detected by the ensemble, per attack family.</p>
+    <div class="legend">${famSeries.map(s => `<span><span class="key" style="background:${s.color}"></span>${s.name}</span>`).join("")}</div>
+    ${hbar(fam, famSeries)}
+    ${details([{ h: "Family", f: r => r.label }, { h: "Known", num: 1, f: r => pct(r.seen) }, { h: "Novel", num: 1, f: r => pct(r.unseen) }], fam)}</div>`;
+
+  // Hybrid
+  const hcats = hybrid.map(r => ({ label: r.detector.replace(" (Isolation Forest)", "").replace(" (either layer)", ""), v: r.recall_unseen_attacks,
+    tip: `All attacks ${pct(r.recall_all)} · FPR ${pct(r.false_positive_rate)} · F1 ${pct(r.f1)}` }));
+  h += `<div class="card"><h2>Adding an anomaly layer</h2><p class="sub">Novel attacks detected. An Isolation Forest trained only on normal traffic catches what the supervised models miss.</p>
+    ${hbar(hcats, [{ key: "v", color: "var(--s1)" }])}
+    ${details([{ h: "Detector", f: r => esc(r.detector) }, { h: "Novel", num: 1, f: r => pct(r.recall_unseen_attacks) }, { h: "All attacks", num: 1, f: r => pct(r.recall_all) },
+      { h: "FPR", num: 1, f: r => pct(r.false_positive_rate) }, { h: "F1", num: 1, f: r => pct(r.f1) }], hybrid)}</div></div>`;
+
+  // Second dataset: same models and split idea on CIC-IDS2017 (corrected labels)
+  const dsCats = [["NSL-KDD", hybrid], ["CIC-IDS2017", cHybrid]].flatMap(([ds, rows]) => [["Supervised", "ensemble"], ["Hybrid", "with anomaly layer"]].map(([k, name]) => {
+    const r = rows.find(x => x.detector.startsWith(k));
+    return { label: `${ds} · ${name}`, seen: r.recall_seen_attacks, unseen: r.recall_unseen_attacks, fpr: r.false_positive_rate, tip: `False-positive rate ${pct(r.false_positive_rate)}` };
+  }));
+  const cAtt = cRecall.filter(r => r.model === ENS && r.label !== "ALL")
+    .sort((a, b) => a.attack_types.localeCompare(b.attack_types) || b.rows - a.rows)
+    .map(r => ({ label: r.label.replace("Web Attack - ", "Web: ").replace("Infiltration - Portscan", "Infiltration portscan"), v: r.recall, kind: r.attack_types,
+      tip: `${r.rows.toLocaleString()} test flows · ${r.attack_types === "seen" ? "known" : "novel"} attack type` }));
+  h += `<div class="card"><h2>Second dataset: CIC-IDS2017</h2><p class="sub">The same models on a modern dataset with corrected labels (KU Leuven, 2023). Trained on Monday–Wednesday; tested on held-out Monday–Wednesday flows (known attack types) and on Thursday–Friday (8 attack types never seen in training). The pattern from NSL-KDD repeats, more sharply.</p>
+    <div class="legend">${famSeries.map(s => `<span><span class="key" style="background:${s.color}"></span>${s.name}</span>`).join("")}</div>
+    ${hbar(dsCats, famSeries, { L: 250 })}
+    ${details([{ h: "Dataset · detector", f: r => r.label }, { h: "Known", num: 1, f: r => pct(r.seen) }, { h: "Novel", num: 1, f: r => pct(r.unseen) }, { h: "FPR", num: 1, f: r => pct(r.fpr, 2) }], dsCats)}
+    <h3>Detected per attack type, CIC-IDS2017 ensemble</h3>
+    ${hbar(cAtt, [{ key: "v" }], { color: c => c.kind === "seen" ? "var(--s1)" : "var(--s2)", L: 200 })}
+    ${details([{ h: "Attack type", f: r => esc(r.label) }, { h: "Kind", f: r => r.kind === "seen" ? "Known" : "Novel" }, { h: "Detected", num: 1, f: r => pct(r.v) }], cAtt)}
+    ${details([{ h: "Model", f: r => esc(r.model) }, { h: "F1", num: 1, f: r => pct(r.f1) }, { h: "Precision", num: 1, f: r => pct(r.precision) },
+      { h: "Recall", num: 1, f: r => pct(r.recall) }, { h: "FPR", num: 1, f: r => pct(r.false_positive_rate, 2) }, { h: "ROC-AUC", num: 1, f: r => r.roc_auc.toFixed(3) }], cMetrics).replace("Show as table", "Show all models")}</div>`;
+
+  // MITRE
+  const mcats = [...mitre].sort((a, b) => b.recall - a.recall).map(m => ({ id: m.technique_id, label: `${m.technique_id} ${m.technique.split(": ").pop()}`, v: m.recall, cov: m.coverage,
+    tip: `${esc(m.technique)}<br>${esc(m.attack_types)} · ${m.test_rows.toLocaleString()} rows · ${m.coverage}` }));
+  h += `<div class="card"><h2>MITRE ATT&amp;CK coverage</h2><p class="sub">Share of each technique's test traffic the ensemble detects. Floods and scans are caught; credential attacks, exploits and tunnelling are not.</p>
+    <div class="legend">${["Good", "Partial", "Gap"].map(s => `<span>${chip(s)} ${s === "Good" ? "≥ 80%" : s === "Partial" ? "40–80%" : "< 40%"}</span>`).join("")}</div>
+    ${hbar(mcats, [{ key: "v" }], { color: c => `var(--${STATUS[c.cov]})`, L: 300 })}
+    ${details([{ h: "Technique", f: r => `${r.technique_id} ${esc(r.technique)}` }, { h: "Tactic", f: r => esc(r.tactic) }, { h: "Rows", num: 1, f: r => r.test_rows.toLocaleString() },
+      { h: "Detected", num: 1, f: r => pct(r.recall) }, { h: "Coverage", f: r => chip(r.coverage) }], mcats.map(c => mitre.find(m => m.technique_id === c.id)))}</div>`;
+
+  // Threshold trade-off: recall vs false-positive rate
+  {
+    const W = 640, H = 310, L = 48, R = 20, T = 26, B = 40;
+    const xMax = Math.ceil(Math.max(...thr.map(t => t.false_positive_rate)) * 50) / 50, yMin = 0.5, yMax = 0.9;
+    const x = v => L + (W - L - R) * v / xMax, y = v => T + (H - T - B) * (1 - (v - yMin) / (yMax - yMin));
+    const pts = [...thr].sort((a, b) => a.false_positive_rate - b.false_positive_rate);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+    for (let v = 0; v <= xMax + 1e-9; v += 0.02) s += `<line x1="${x(v)}" x2="${x(v)}" y1="${T}" y2="${H - B}" stroke="var(--grid)"/><text class="tick" x="${x(v)}" y="${H - B + 16}" text-anchor="middle">${pct(v, 0)}</text>`;
+    for (let v = yMin; v <= yMax + 1e-9; v += 0.1) s += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text class="tick" x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${pct(v, 0)}</text>`;
+    s += `<text class="tick" x="${(L + W - R) / 2}" y="${H - 4}" text-anchor="middle">False-positive rate</text><text class="tick" x="${L - 40}" y="10">Recall</text>`;
+    s += `<polyline fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="${pts.map(p => `${x(p.false_positive_rate)},${y(p.recall)}`).join(" ")}"/>`;
+    for (const p of pts) {
+      const cx = x(p.false_positive_rate), cy = y(p.recall);
+      s += `<circle cx="${cx}" cy="${cy}" r="4.5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/>`;
+      if ([0.9, 0.5, 0.05].includes(p.threshold)) s += `<text class="val" x="${cx + 8}" y="${cy + (p.threshold === 0.05 ? -8 : 14)}">t = ${p.threshold}</text>`;
+      s += `<circle cx="${cx}" cy="${cy}" r="12" fill="transparent" data-tip="${esc(`<b>Threshold ${p.threshold}</b><br>Recall ${pct(p.recall)} · FPR ${pct(p.false_positive_rate)}<br>Precision ${pct(p.precision)}`)}"/>`;
+    }
+    s += "</svg>";
+    h += `<div class="grid2"><div class="card"><h2>Alert threshold trade-off</h2><p class="sub">Lowering the ensemble's threshold buys detection with false alarms. Below 0.5 the false-positive rate more than doubles.</p><div class="scroll">${s}</div>
+      ${details([{ h: "Threshold", num: 1, f: r => r.threshold }, { h: "Recall", num: 1, f: r => pct(r.recall) }, { h: "Precision", num: 1, f: r => pct(r.precision) },
+        { h: "FPR", num: 1, f: r => pct(r.false_positive_rate) }], thr)}</div>`;
+  }
+
+  // Drift
+  const dcats = drift.slice(0, 8).map(d => ({ label: d.feature, v: d.psi, tip: d.status }));
+  h += `<div class="card"><h2>Drift in normal traffic</h2><p class="sub">Population Stability Index, training vs test, normal traffic only. Above 0.1 is a moderate shift, above 0.25 triggers retraining.</p>
+    ${hbar(dcats, [{ key: "v", color: "var(--s1)" }], { max: 0.3, fmt: v => v.toFixed(2), ticks: [0, 0.1, 0.2, 0.3], refs: [{ v: 0.25, label: "retrain" }] })}
+    ${details([{ h: "Feature", f: r => r.feature }, { h: "PSI", num: 1, f: r => r.psi.toFixed(3) }, { h: "Status", f: r => r.status }], drift)}</div></div>`;
+
+  // Risk register
+  const rcols = [{ h: "ID", f: r => r["Risk ID"] }, { h: "Risk", f: r => esc(r.Risk) }, { h: "Owner", f: r => esc(r["Risk owner"]) },
+    { h: "Inherent", f: r => `<span class="nowrap">${r["Inherent score"]} · ${chip(r["Inherent rating"])}</span>` }, { h: "Residual", f: r => `<span class="nowrap">${r["Residual score"]} · ${chip(r["Residual rating"])}</span>` },
+    { h: "Annex A", f: r => esc(r["ISO 27001:2022 Annex A"]) }];
+  h += `<div class="card"><h2>ISO/IEC 27001 risk register</h2><p class="sub">Likelihood × impact (1–25), before and after treatment. Residual scores above 9 need CISO sign-off. Full actions and evidence in the <a href="risk_register.xlsx">register</a>.</p>
+    ${table(rcols, risks)}</div>`;
+
+  document.getElementById("app").innerHTML = h;
+}
+
+const tip = document.getElementById("tip");
+document.addEventListener("pointermove", e => {
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  if (!t) { tip.style.opacity = 0; return; }
+  tip.innerHTML = t.getAttribute("data-tip"); tip.style.opacity = 1;
+  const x = Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8), y = e.clientY + 14 + tip.offsetHeight > innerHeight ? e.clientY - tip.offsetHeight - 10 : e.clientY + 14;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+});
+
+main().catch(err => {
+  console.error(err);
+  document.getElementById("app").innerHTML = `<div class="err">Could not load the results files. Open this page through GitHub Pages or a local web server (<code>python -m http.server</code>), not as a file.</div>`;
+});
+</script>
+</body>
+</html>

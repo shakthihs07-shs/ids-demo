@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live IDS Console</title>
+<meta name="description" content="Real-time ML intrusion detection: network flows scored live by a supervised model plus an anomaly layer, with an analyst review queue.">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #fcfcfb; --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10); --neutral: #c3c2b7;
+  --s1: #2a78d6; --s2: #eb6834;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10); --neutral: #4a4946;
+    --s1: #3987e5; --s2: #d95926;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1180px; margin: 0 auto; padding: 28px 16px 64px; }
+header { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; align-items: flex-start; }
+header h1 { font-size: 26px; line-height: 1.2; margin: 0 0 6px; }
+header p { margin: 0; color: var(--ink-2); max-width: 72ch; }
+nav { margin-top: 8px; display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; }
+a { color: var(--s1); }
+h2 { font-size: 17px; margin: 0 0 2px; }
+.sub { color: var(--ink-2); font-size: 14px; margin: 0 0 12px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 5px 12px; font-size: 13.5px; white-space: nowrap; }
+.pill i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+.pill.on i { background: var(--good); box-shadow: 0 0 0 0 var(--good); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 60%, transparent); } 100% { box-shadow: 0 0 0 8px transparent; } }
+@media (prefers-reduced-motion: reduce) { .pill.on i { animation: none; } }
+.controls { display: flex; gap: 10px 18px; flex-wrap: wrap; align-items: center; margin: 20px 0 4px; font-size: 14px; }
+.controls label { color: var(--ink-2); display: inline-flex; gap: 8px; align-items: center; }
+#scenario { flex: 1; width: 100%; min-width: 0; max-width: 440px; text-overflow: ellipsis; }
+.controls label { min-width: 0; max-width: 100%; }
+select, button { font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+button:hover, select:hover { border-color: var(--axis); }
+button:focus-visible, select:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; border-right: 1px solid var(--border); padding: 6px 11px; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--page); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 16px 0; }
+.tile, .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.tile { padding: 12px 14px; }
+.tile .label { color: var(--ink-2); font-size: 13px; }
+.tile .value { font-size: 24px; font-weight: 600; line-height: 1.25; margin: 2px 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tile .note { color: var(--muted); font-size: 12.5px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 520px), 1fr)); gap: 12px; }
+.card { padding: 16px 18px; margin-bottom: 12px; min-width: 0; }
+svg { display: block; width: 100%; height: auto; }
+svg text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); margin: 0 0 8px; }
+.key { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.scroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { color: var(--ink-2); font-weight: 600; font-size: 12.5px; position: sticky; top: 0; background: var(--surface); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 12.5px; }
+.feed { max-height: 420px; overflow: auto; }
+.chip { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-weight: 600; font-size: 12.5px; }
+.chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.dim { color: var(--muted); }
+.bar { height: 10px; border-radius: 0 4px 4px 0; background: var(--s1); }
+.bartrack { background: var(--grid); border-radius: 0 4px 4px 0; height: 10px; width: 100%; min-width: 80px; }
+.queue-item { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; padding: 10px 0; border-bottom: 1px solid var(--grid); font-size: 13.5px; }
+.queue-item:last-child { border-bottom: 0; }
+.queue-item .acts { display: flex; gap: 6px; align-items: center; }
+.empty { color: var(--muted); font-size: 13.5px; padding: 8px 0; }
+.how { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; font-size: 13.5px; }
+.how div { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.how b { display: block; margin-bottom: 2px; }
+footer { color: var(--muted); font-size: 13px; margin-top: 20px; max-width: 90ch; }
+code { font-size: 12.5px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Live IDS console</h1>
+      <p>Network flows scored in real time by a hybrid detector: a supervised model for known attack patterns plus an anomaly layer for attacks it was never trained on. Uncertain flows go to an analyst queue instead of being blocked or ignored.</p>
+      <nav>
+        <a href="https://shakthihs07-shs.github.io/ids-demo/">Research results</a>
+        <a href="/docs" id="api-link">API docs</a>
+      </nav>
+    </div>
+    <span class="pill" id="status" role="status" aria-live="polite"><i></i><span>Connecting…</span></span>
+  </header>
+
+  <div class="controls">
+    <label>Traffic
+      <select id="scenario">
+        <option value="mixed">Replay: whole week, mixed</option>
+        <option value="known">Replay: DoS and brute force (known to the model)</option>
+        <option value="recon-ddos">Replay: port scans, DDoS, botnet (novel)</option>
+        <option value="web-infiltration">Replay: web attacks, infiltration (novel)</option>
+      </select>
+    </label>
+    <span class="controls" style="margin:0">
+      <span class="dim">Flows per second</span>
+      <span class="seg" id="speed" role="group" aria-label="Flows per second">
+        <button data-v="5">5</button><button data-v="20" aria-pressed="true">20</button><button data-v="100">100</button><button data-v="500">500</button>
+      </span>
+    </span>
+    <button id="pause">Pause</button>
+    <button id="reset">Reset counters</button>
+  </div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card">
+    <h2>Decisions, last 60 seconds</h2>
+    <p class="sub">Every bar is half a second of traffic. ALERT: the supervised model recognises a known attack pattern. REVIEW: uncertain score, or flagged by the anomaly layer.</p>
+    <div class="legend"><span><span class="key" style="background:var(--critical)"></span>Alert</span><span><span class="key" style="background:var(--warning)"></span>Review</span><span><span class="key" style="background:var(--neutral)"></span>Allow</span></div>
+    <div id="chart"></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>Live alert feed</h2>
+      <p class="sub">Flagged flows, newest first. On replayed traffic the true label is known, so each decision is marked right or wrong.</p>
+      <div class="feed scroll"><table><thead><tr><th>Time</th><th>Flow</th><th>Decision</th><th class="num">Score</th><th>True label</th><th>ATT&amp;CK</th></tr></thead><tbody id="feed"></tbody></table></div>
+    </div>
+    <div class="card">
+      <h2>Analyst queue</h2>
+      <p class="sub">REVIEW decisions wait for a human. Escalate or dismiss, then see what the flow really was.</p>
+      <div id="queue"></div>
+      <p class="sub" id="verdicts" style="margin:8px 0 0"></p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Detection by attack type</h2>
+    <p class="sub">Since the counters were reset. Detected means ALERT or REVIEW. <b>Novel</b> types were never in the training data.</p>
+    <div class="scroll"><table><thead><tr><th>Attack type</th><th>ATT&amp;CK technique</th><th class="num">Flows</th><th class="num">Alert</th><th class="num">Review</th><th class="num">Missed</th><th style="width:30%">Detected</th></tr></thead><tbody id="bytype"></tbody></table></div>
+  </div>
+
+  <div class="card">
+    <h2>How it works</h2>
+    <p class="sub" id="card-sub">Loading the model card…</p>
+    <div class="how">
+      <div><b>1. Flow features</b>82 CICFlowMeter features per flow: sizes, timings, flags. IPs and ports are not used, so the model cannot memorise lab addresses.</div>
+      <div><b>2. Supervised model</b>Gradient Boosting trained on Monday–Wednesday of CIC-IDS2017: DoS, Heartbleed, FTP/SSH brute force.</div>
+      <div><b>3. Anomaly layer</b>Isolation Forest trained on benign traffic only. Flags the 5% least normal-looking flows, which catches attack types the supervised model never saw.</div>
+      <div><b>4. Decision bands</b>Score ≥ 0.7 → alert. Score 0.2–0.7 or anomaly → analyst review. Otherwise allow. From the project's human-in-the-loop tests.</div>
+    </div>
+  </div>
+
+  <footer>Replayed traffic is real CIC-IDS2017 test data the model never trained on, compressed: attack flows are mixed with up to three times as many benign flows from the same days, and long quiet stretches are shortened, so attacks arrive far more often than in a real network. <span id="where-note">Scores are computed live by the server as each batch streams.</span> Data: CIC-IDS2017 (Sharafaldin, Habibi Lashkari and Ghorbani, ICISSP 2018) with labels corrected by Engelen, Rimmer and Joosen (KU Leuven, WTMC 2021; Liu et al., CNS 2022).</footer>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js"></script>
+<script>window.ORT_WASM = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/";</script>
+<script src="browser-engine.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+const pct = (x, d = 1) => isFinite(x) ? (100 * x).toFixed(d) + "%" : "–";
+const fmt = n => n.toLocaleString("en-US");
+const COLOR = { ALERT: "var(--critical)", REVIEW: "var(--warning)", ALLOW: "var(--neutral)" };
+const chip = d => `<span class="chip"><i style="background:${COLOR[d]}"></i>${d}</span>`;
+let novelTypes = new Set();
+
+let S;
+function reset() {
+  S = { flows: 0, ALERT: 0, REVIEW: 0, ALLOW: 0, attacks: 0, caught: 0, benign: 0, falseFlags: 0, types: {}, feed: [], queue: [],
+        lat: [], buckets: [], verdict: { right: 0, wrong: 0 } };
+  render();
+}
+
+// ---------- stream ----------
+// Where flows are scored: the server's WebSocket stream, or, when browser-engine.js is loaded (live/ on
+// GitHub Pages, no server), ONNX models running in this browser. Both deliver the same flow messages.
+const ServerEngine = {
+  where: "server-side", note: "Scores are computed live by the server as each batch streams.", ws: null, retry: 0,
+  start(ctl, onFlows, onStatus) {
+    const go = () => {
+      const ws = this.ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/stream`);
+      ws.onopen = () => { this.retry = 0; ws.send(JSON.stringify(ctl)); onStatus(); };
+      ws.onmessage = e => { const m = JSON.parse(e.data); if (m.type === "flows") onFlows(m); };
+      ws.onclose = e => { onStatus(e.reason || "Reconnecting…"); setTimeout(go, Math.min(10000, 1000 * 2 ** this.retry++)); };
+    };
+    go();
+  },
+  send(patch) { if (this.ws?.readyState === 1) this.ws.send(JSON.stringify(patch)); },
+  ready() { return this.ws?.readyState === 1; },
+  model() { return fetch("/api/model").then(r => r.json()); },
+};
+const engine = window.BrowserEngine || ServerEngine;
+
+let ctl = { scenario: "mixed", speed: 20, paused: false };
+function send(patch) { Object.assign(ctl, patch); engine.send(patch); status(); }
+function status(msg) {
+  const on = engine.ready() && !ctl.paused;
+  $("status").className = "pill" + (on ? " on" : "");
+  $("status").lastElementChild.textContent = msg || (!engine.ready() ? "Connecting…" : ctl.paused ? "Paused" : engine.live || "Streaming replay");
+}
+
+function ingest(m) {
+  const b = { ALERT: 0, REVIEW: 0, ALLOW: 0 };
+  for (const f of m.flows) {
+    S.flows++; S[f.decision]++; b[f.decision]++;
+    const attack = f.label !== "BENIGN", flagged = f.decision !== "ALLOW";
+    if (attack) {
+      S.attacks++; if (flagged) S.caught++;
+      const t = S.types[f.label] ??= { label: f.label, technique: f.technique, n: 0, ALERT: 0, REVIEW: 0, ALLOW: 0 };
+      t.n++; t[f.decision]++;
+    } else { S.benign++; if (flagged) S.falseFlags++; }
+    if (flagged) {
+      S.feed.unshift(f); if (S.feed.length > 60) S.feed.pop();
+      if (f.decision === "REVIEW" && S.queue.length < 50) S.queue.push(f);
+    }
+  }
+  S.buckets.push(b); if (S.buckets.length > 120) S.buckets.shift();
+  if (m.flows.length) { S.lat.push(m.latency_ms); S.batch = m.flows.length; if (S.lat.length > 40) S.lat.shift(); }
+  render();
+}
+
+// ---------- render ----------
+const tile = (label, value, note) => `<div class="tile"><div class="label">${label}</div><div class="value">${value}</div><div class="note">${note}</div></div>`;
+function render() {
+  const lat = [...S.lat].sort((a, b) => a - b)[Math.floor(S.lat.length / 2)];
+  $("tiles").innerHTML =
+    tile("Flows scored", fmt(S.flows), `${ctl.paused ? "paused" : ctl.speed + " flows/s"}`) +
+    tile("Alerts", fmt(S.ALERT), "known attack pattern, auto-raised") +
+    tile("Sent to analysts", fmt(S.REVIEW), `${fmt(S.queue.length)} waiting in the queue`) +
+    tile("Attacks detected", S.attacks ? pct(S.caught / S.attacks) : "–", `${fmt(S.caught)} of ${fmt(S.attacks)} attack flows`) +
+    tile("Benign flows flagged", S.benign ? pct(S.falseFlags / S.benign) : "–", `${fmt(S.falseFlags)} of ${fmt(S.benign)}: the anomaly layer's cost`) +
+    tile("Scoring latency", lat === undefined ? "–" : `${lat.toFixed(1)} ms`, lat === undefined ? `${engine.where}, per batch` : `median per batch of ${fmt(S.batch)} flows, ${engine.where}`);
+  renderChart(); renderFeed(); renderQueue(); renderTypes();
+}
+
+function renderChart() {
+  const W = 720, H = 170, L = 34, B = 18, n = 120, bw = (W - L) / n;
+  const max = Math.max(10, ...S.buckets.map(b => b.ALERT + b.REVIEW + b.ALLOW));
+  const step = Math.pow(10, Math.floor(Math.log10(max))), top = Math.ceil(max / step) * step;
+  const y = v => (H - B) * (1 - v / top);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Decisions per half second, last 60 seconds">`;
+  for (const t of [0, top / 2, top]) s += `<line x1="${L}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="var(--grid)"/><text x="${L - 6}" y="${y(t) + 4}" text-anchor="end">${fmt(t)}</text>`;
+  const off = n - S.buckets.length;
+  S.buckets.forEach((b, i) => {
+    let base = 0; const x = L + (off + i) * bw + 1;
+    for (const d of ["ALLOW", "REVIEW", "ALERT"]) {
+      if (!b[d]) continue;
+      const h = (H - B) * b[d] / top, y0 = y(base) - h;
+      s += `<rect x="${x.toFixed(1)}" y="${y0.toFixed(1)}" width="${Math.max(1, bw - 2).toFixed(1)}" height="${Math.max(0, h - (base ? 1 : 0)).toFixed(1)}" fill="${COLOR[d]}" rx="1"/>`;
+      base += b[d];
+    }
+  });
+  s += `<text x="${L}" y="${H - 2}">60 s ago</text><text x="${W}" y="${H - 2}" text-anchor="end">now</text></svg>`;
+  $("chart").innerHTML = s;
+}
+
+const flowCell = f => f.src ? `<span class="mono">${esc(f.src)} → ${esc(f.dst)}:${esc(f.dport)}</span>` : "–";
+const truth = f => {
+  if (f.label === "BENIGN") return `<span class="dim">benign · false alarm</span>`;
+  return `${esc(f.label)}${novelTypes.has(f.label) ? ' <span class="dim">(novel)</span>' : ""}`;
+};
+function renderFeed() {
+  $("feed").innerHTML = S.feed.length ? S.feed.map(f => `<tr><td class="mono">${esc((f.ts || "").slice(11, 19))}</td><td>${flowCell(f)}</td><td>${chip(f.decision)}${f.anomaly ? ' <span class="dim">anomaly</span>' : ""}</td>
+    <td class="num">${f.supervised.toFixed(2)}</td><td>${truth(f)}</td><td class="dim">${esc((f.technique || "").split(" ")[0])}</td></tr>`).join("")
+    : `<tr><td colspan="6" class="empty">No flagged flows yet.</td></tr>`;
+}
+function renderQueue() {
+  const items = S.queue.slice(0, 5);
+  $("queue").innerHTML = items.length ? items.map((f, i) => `<div class="queue-item"><div>${flowCell(f)}<br><span class="dim">score ${f.supervised.toFixed(2)}${f.anomaly ? " · anomaly layer" : ""} · ${esc((f.ts || "").slice(11, 19))}</span></div>
+    <div class="acts"><button data-i="${i}" data-v="attack">Escalate</button><button data-i="${i}" data-v="benign">Dismiss</button></div></div>`).join("")
+    : `<p class="empty">Queue is empty.</p>`;
+  const v = S.verdict, n = v.right + v.wrong;
+  $("verdicts").innerHTML = n ? `Your verdicts: ${v.right} of ${n} correct.${v.last ? " Last flow was: <b>" + esc(v.last) + "</b>." : ""}` : "";
+}
+$("queue").addEventListener("click", e => {
+  const btn = e.target.closest("button"); if (!btn) return;
+  const f = S.queue.splice(+btn.dataset.i, 1)[0];
+  if (f) {
+    const isAttack = f.label !== "BENIGN";
+    S.verdict[(btn.dataset.v === "attack") === isAttack ? "right" : "wrong"]++;
+    S.verdict.last = isAttack ? f.label : "benign";
+  }
+  render();
+});
+function renderTypes() {
+  const rows = Object.values(S.types).sort((a, b) => b.n - a.n);
+  $("bytype").innerHTML = rows.length ? rows.map(t => {
+    const det = (t.ALERT + t.REVIEW) / t.n;
+    return `<tr><td>${esc(t.label)}${novelTypes.has(t.label) ? ' <span class="dim">· novel</span>' : ""}</td><td class="dim">${esc(t.technique)}</td><td class="num">${fmt(t.n)}</td>
+      <td class="num">${fmt(t.ALERT)}</td><td class="num">${fmt(t.REVIEW)}</td><td class="num">${fmt(t.ALLOW)}</td>
+      <td><div class="bartrack" title="${pct(det)} detected"><div class="bar" style="width:${(100 * det).toFixed(1)}%"></div></div><span class="dim">${pct(det)}</span></td></tr>`;
+  }).join("") : `<tr><td colspan="7" class="empty">No attack flows yet.</td></tr>`;
+}
+
+// ---------- controls ----------
+$("scenario").onchange = e => { send({ scenario: e.target.value }); reset(); };
+$("speed").onclick = e => {
+  const b = e.target.closest("button"); if (!b) return;
+  for (const x of $("speed").children) x.setAttribute("aria-pressed", x === b);
+  send({ speed: +b.dataset.v }); render();
+};
+$("pause").onclick = () => { send({ paused: !ctl.paused }); $("pause").textContent = ctl.paused ? "Resume" : "Pause"; render(); };
+$("reset").onclick = reset;
+
+engine.model().then(m => {
+  novelTypes = new Set(m.novel_types);
+  $("card-sub").textContent = `On ${fmt(m.test_flows)} test flows it never trained on: ${pct(m.detected_known, 2)} of known attack types and ${pct(m.detected_novel)} of novel ones detected; ${pct(m.benign_flagged)} of benign flows sent to review.`;
+  render();
+}).catch(() => { $("card-sub").textContent = "Model card unavailable."; });
+
+$("where-note").textContent = engine.note;
+if (engine !== ServerEngine) $("api-link").remove();
+reset(); engine.start(ctl, ingest, status);
+</script>
+</body>
+</html>

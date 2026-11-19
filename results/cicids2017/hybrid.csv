@@ -1,0 +1,4 @@
+detector,recall_all,recall_seen_attacks,recall_unseen_attacks,false_positive_rate,precision,f1
+Supervised ensemble,0.168548,0.999907,0.032284,0.000009,0.999875,0.288469
+Anomaly (Isolation Forest),0.609927,0.034943,0.704170,0.051188,0.836453,0.705451
+Hybrid (either layer),0.773459,0.999907,0.736343,0.051193,0.866400,0.817296

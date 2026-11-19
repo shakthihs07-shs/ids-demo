@@ -1,0 +1,86 @@
+model,label,attack_types,rows,recall
+Random Forest,Botnet,unseen,736,0.000000
+Random Forest,DDoS,unseen,95144,0.985748
+Random Forest,DoS GoldenEye,seen,2270,0.998678
+Random Forest,DoS Hulk,seen,47540,1.000000
+Random Forest,DoS Slowhttptest,seen,522,0.998084
+Random Forest,DoS Slowloris,seen,1158,0.998273
+Random Forest,FTP-Patator,seen,1192,0.999161
+Random Forest,Heartbleed,seen,3,1.000000
+Random Forest,Infiltration,unseen,36,0.000000
+Random Forest,Infiltration - Portscan,unseen,71767,0.000000
+Random Forest,Portscan,unseen,159066,0.000528
+Random Forest,SSH-Patator,seen,888,0.997748
+Random Forest,Web Attack - Brute Force,unseen,73,0.000000
+Random Forest,Web Attack - SQL Injection,unseen,13,0.000000
+Random Forest,Web Attack - XSS,unseen,18,0.000000
+Random Forest,ALL,seen,53573,0.999832
+Random Forest,ALL,unseen,326853,0.287199
+Gradient Boosting,Botnet,unseen,736,0.000000
+Gradient Boosting,DDoS,unseen,95144,0.000263
+Gradient Boosting,DoS GoldenEye,seen,2270,1.000000
+Gradient Boosting,DoS Hulk,seen,47540,0.999979
+Gradient Boosting,DoS Slowhttptest,seen,522,0.998084
+Gradient Boosting,DoS Slowloris,seen,1158,0.999136
+Gradient Boosting,FTP-Patator,seen,1192,0.999161
+Gradient Boosting,Heartbleed,seen,3,0.666667
+Gradient Boosting,Infiltration,unseen,36,0.000000
+Gradient Boosting,Infiltration - Portscan,unseen,71767,0.000000
+Gradient Boosting,Portscan,unseen,159066,0.000000
+Gradient Boosting,SSH-Patator,seen,888,0.998874
+Gradient Boosting,Web Attack - Brute Force,unseen,73,0.000000
+Gradient Boosting,Web Attack - SQL Injection,unseen,13,0.000000
+Gradient Boosting,Web Attack - XSS,unseen,18,0.000000
+Gradient Boosting,ALL,seen,53573,0.999888
+Gradient Boosting,ALL,unseen,326853,0.000076
+SVM (RBF),Botnet,unseen,736,0.000000
+SVM (RBF),DDoS,unseen,95144,0.003889
+SVM (RBF),DoS GoldenEye,seen,2270,0.988106
+SVM (RBF),DoS Hulk,seen,47540,0.999979
+SVM (RBF),DoS Slowhttptest,seen,522,0.992337
+SVM (RBF),DoS Slowloris,seen,1158,0.994819
+SVM (RBF),FTP-Patator,seen,1192,0.999161
+SVM (RBF),Heartbleed,seen,3,0.000000
+SVM (RBF),Infiltration,unseen,36,0.027778
+SVM (RBF),Infiltration - Portscan,unseen,71767,0.000000
+SVM (RBF),Portscan,unseen,159066,0.000352
+SVM (RBF),SSH-Patator,seen,888,0.989865
+SVM (RBF),Web Attack - Brute Force,unseen,73,0.739726
+SVM (RBF),Web Attack - SQL Injection,unseen,13,0.076923
+SVM (RBF),Web Attack - XSS,unseen,18,0.000000
+SVM (RBF),ALL,seen,53573,0.999048
+SVM (RBF),ALL,unseen,326853,0.001475
+Neural Net (MLP),Botnet,unseen,736,0.000000
+Neural Net (MLP),DDoS,unseen,95144,0.281804
+Neural Net (MLP),DoS GoldenEye,seen,2270,0.999559
+Neural Net (MLP),DoS Hulk,seen,47540,1.000000
+Neural Net (MLP),DoS Slowhttptest,seen,522,0.996169
+Neural Net (MLP),DoS Slowloris,seen,1158,0.999136
+Neural Net (MLP),FTP-Patator,seen,1192,0.999161
+Neural Net (MLP),Heartbleed,seen,3,1.000000
+Neural Net (MLP),Infiltration,unseen,36,0.000000
+Neural Net (MLP),Infiltration - Portscan,unseen,71767,0.000000
+Neural Net (MLP),Portscan,unseen,159066,0.000365
+Neural Net (MLP),SSH-Patator,seen,888,0.997748
+Neural Net (MLP),Web Attack - Brute Force,unseen,73,0.000000
+Neural Net (MLP),Web Attack - SQL Injection,unseen,13,0.153846
+Neural Net (MLP),Web Attack - XSS,unseen,18,0.000000
+Neural Net (MLP),ALL,seen,53573,0.999869
+Neural Net (MLP),ALL,unseen,326853,0.082214
+Ensemble (RF+GB+MLP),Botnet,unseen,736,0.000000
+Ensemble (RF+GB+MLP),DDoS,unseen,95144,0.110233
+Ensemble (RF+GB+MLP),DoS GoldenEye,seen,2270,1.000000
+Ensemble (RF+GB+MLP),DoS Hulk,seen,47540,1.000000
+Ensemble (RF+GB+MLP),DoS Slowhttptest,seen,522,0.998084
+Ensemble (RF+GB+MLP),DoS Slowloris,seen,1158,0.999136
+Ensemble (RF+GB+MLP),FTP-Patator,seen,1192,0.999161
+Ensemble (RF+GB+MLP),Heartbleed,seen,3,1.000000
+Ensemble (RF+GB+MLP),Infiltration,unseen,36,0.000000
+Ensemble (RF+GB+MLP),Infiltration - Portscan,unseen,71767,0.000000
+Ensemble (RF+GB+MLP),Portscan,unseen,159066,0.000396
+Ensemble (RF+GB+MLP),SSH-Patator,seen,888,0.997748
+Ensemble (RF+GB+MLP),Web Attack - Brute Force,unseen,73,0.000000
+Ensemble (RF+GB+MLP),Web Attack - SQL Injection,unseen,13,0.076923
+Ensemble (RF+GB+MLP),Web Attack - XSS,unseen,18,0.000000
+Ensemble (RF+GB+MLP),ALL,seen,53573,0.999907
+Ensemble (RF+GB+MLP),ALL,unseen,326853,0.032284
