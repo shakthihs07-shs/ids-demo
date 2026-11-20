@@ -3,7 +3,7 @@
 - **[Live IDS console](https://shakthihs07-shs.github.io/ids-demo/live/)**: network flows scored in real time, in your browser, by a hybrid
   detector (Gradient Boosting for known attacks, Isolation Forest for attack types it never saw), with an
   analyst review queue.
-- **[Live attack tracker](https://152-70-6-78.sslip.io/)**: real attacks on an internet-facing honeypot
+- **[Live attack tracker](https://shakthihs07-shs.github.io/ids-demo/tracker/)**: real attacks on an internet-facing honeypot
   (OpenCanary on Oracle Cloud) as they happen: login attempts, scans and exploit payloads, mapped to
   MITRE ATT&CK, with IP addresses truncated and passwords never stored.
 - **[Results dashboard](https://shakthihs07-shs.github.io/ids-demo/)**: model comparison on NSL-KDD and CIC-IDS2017, novel-attack detection,
