@@ -56,6 +56,40 @@ function timeline(byHour) {
   return s + "</svg>";
 }
 
+// Shadow mode: per service, the share of real attack flows the detector would ALERT on, send to REVIEW, or ALLOW
+const DECISIONS = [["ALERT", "var(--critical)", "alert (known attack pattern)"], ["REVIEW", "var(--warning)", "analyst review"],
+                   ["ALLOW", "var(--muted)", "allowed: missed"]];
+function shadowChart(rows) {
+  if (!rows.length) return `<p class="empty">Waiting for the first hourly run.</p>`;
+  const W = 640, L = 110, R = 70, bh = 16, rowH = 26, H = rows.length * rowH + 4;
+  let s = `<div class="legend">${DECISIONS.map(([d, c, t]) => `<span><i style="background:${c}"></i>${d}: ${t}</span>`).join("")}</div>`;
+  s += `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Detector decisions per service">`;
+  rows.forEach((r, i) => {
+    const y = i * rowH + (rowH - bh) / 2;
+    let x = L;
+    s += `<text x="${L - 8}" y="${y + bh / 2 + 4}" text-anchor="end">${esc(r.key)}</text>`;
+    DECISIONS.forEach(([d, c]) => {
+      const w = (W - L - R) * r[d] / r.flows;
+      if (w > 0) s += `<rect x="${x}" y="${y}" width="${Math.max(0, w - 2)}" height="${bh}" fill="${c}"/>`;  // 2px gap between segments
+      x += w;
+    });
+    const flagged = (r.ALERT + r.REVIEW) / r.flows;
+    s += `<text class="val" x="${W - R + 6}" y="${y + bh / 2 + 4}">${Math.round(flagged * 100)}% flagged</text>`;
+    const tip = `<b>${esc(r.key)}</b><br>${fmt(r.flows)} flows<br>ALERT ${fmt(r.ALERT)} · REVIEW ${fmt(r.REVIEW)} · ALLOW ${fmt(r.ALLOW)}`;
+    s += `<rect x="0" y="${y - 3}" width="${W}" height="${bh + 6}" fill="transparent" data-tip="${esc(tip)}"/>`;
+  });
+  return s + "</svg>";
+}
+
+async function loadShadow() {
+  const s = await fetch(`${API}api/shadow?hours=${hours}`).then(r => r.json());
+  const pct = v => `${Math.round(v * 100)}%`, d = s.decisions;
+  $("shadow-summary").textContent = s.flows
+    ? `Of ${fmt(s.flows)} attack flows, the detector would have flagged ${pct(s.flagged_share)} (${fmt(d.ALERT)} alerts, ${fmt(d.REVIEW)} for review) and let ${pct(d.ALLOW / s.flows)} through.`
+    : "";
+  $("shadow").innerHTML = shadowChart(s.by_service.slice(0, 12));
+}
+
 const table = (rows, head, cell) => rows.length
   ? `<table><thead><tr><th>${head}</th><th class="num">Times</th></tr></thead><tbody>${rows.map(r => `<tr><td class="mono wrap">${cell(r)}</td><td class="num">${fmt(r.count)}</td></tr>`).join("")}</tbody></table>`
   : `<p class="empty">Nothing yet.</p>`;
@@ -130,13 +164,14 @@ document.addEventListener("pointermove", ev => {
 $("range").onclick = ev => {
   const b = ev.target.closest("button"); if (!b) return;
   for (const x of $("range").children) x.setAttribute("aria-pressed", x === b);
-  hours = +b.dataset.h; loadStats();
+  hours = +b.dataset.h; loadStats(); loadShadow().catch(() => {});
 };
 
 fetch(`${API}api/events?limit=80`).then(r => r.json()).then(rows => { feed = rows; renderFeed(); }).catch(() => renderFeed());
 loadStats().catch(() => status("Tracker offline", false));
+loadShadow().catch(() => {});
 connect();
-setInterval(() => loadStats().catch(() => {}), 60000);
+setInterval(() => { loadStats().catch(() => {}); loadShadow().catch(() => {}); }, 60000);
 setInterval(() => {  // keep "Last attack" counting between stats refreshes
   const v = document.querySelector("#tiles .tile:last-child .value");
   if (v && lastEvent) v.textContent = ago(lastEvent);

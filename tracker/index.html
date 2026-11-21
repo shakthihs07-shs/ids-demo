@@ -69,6 +69,9 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
 .new { animation: flash 1.5s ease-out; }
 @keyframes flash { from { background: color-mix(in srgb, var(--warning) 35%, transparent); } to { background: transparent; } }
 .empty { color: var(--muted); font-size: 13.5px; padding: 8px 0; }
+.shadow-sum { font-size: 14.5px; margin: 0 0 10px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--ink-2); margin: 0 0 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
 .tip { position: fixed; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border);
   border-radius: 8px; padding: 6px 10px; font-size: 13px; box-shadow: 0 4px 16px rgba(0,0,0,.12); opacity: 0; transition: opacity .1s; z-index: 10; max-width: 300px; }
 footer { color: var(--muted); font-size: 13px; margin-top: 20px; max-width: 95ch; }
@@ -112,6 +115,8 @@ footer { color: var(--muted); font-size: 13px; margin-top: 20px; max-width: 95ch
     <div class="card"><h2>Where attacks come from</h2><p class="sub">Country of the source address. Attackers often use rented servers and hijacked devices, so this is where their infrastructure is, not where they are.</p><div class="scroll" id="countries"></div></div>
     <div class="card"><h2>What they attack</h2><p class="sub">Fake service hit.</p><div class="scroll" id="services"></div></div>
   </div>
+
+  <div class="card"><h2>What the AI says about these real attacks</h2><p class="sub">Shadow mode: every hour the traffic to the fake services is turned into network flows and scored by the <a href="https://shakthihs07-shs.github.io/ids-demo/live/">ML detector</a>, which was trained on 2017 lab data and decides nothing here. Every one of these flows is an unsolicited connection, so ALLOW means the model would have let a real attack through.</p><p class="shadow-sum" id="shadow-summary"></p><div class="scroll" id="shadow"></div></div>
 
   <div class="card"><h2>MITRE ATT&amp;CK techniques</h2><p class="sub">Brute force is guessing passwords; scanning is looking for open services; exploit attempts send payloads for known vulnerabilities.</p><div class="scroll" id="techniques"></div></div>
 
