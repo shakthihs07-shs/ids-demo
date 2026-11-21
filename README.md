@@ -10,8 +10,8 @@
   MITRE ATT&CK coverage, alert-threshold trade-off, drift, and an ISO/IEC 27001:2022 risk register.
 
 The detector runs client-side as ONNX models in onnxruntime-web. This repository holds only the published
-pages and the data they read; the source code, research and risk assessment are in a private repository,
-available on request.
+pages and the data they read; the source code, research, honeypot and risk assessment are in
+**[shakthihs07-shs/ai-ids-iso27001](https://github.com/shakthihs07-shs/ai-ids-iso27001)**.
 
 Data: CIC-IDS2017 (Sharafaldin, Habibi Lashkari and Ghorbani, ICISSP 2018), labels corrected by
 Engelen, Rimmer and Joosen (KU Leuven, WTMC 2021) and Liu et al. (CNS 2022); NSL-KDD (Tavallaee et al.,
